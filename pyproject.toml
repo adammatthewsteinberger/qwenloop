@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qwenloop"
+version = "0.1.0"
+description = "Autonomous local Qwen 2.5 Coder session runner with llama.cpp and vLLM backends."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+dependencies = ["typer>=0.12", "platformdirs>=4.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "pytest-cov>=5", "ruff>=0.9", "mypy>=1.14", "import-linter>=2.1", "bandit>=1.8"]
+
+[project.scripts]
+qwenloop = "qwenloop.cli.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qwenloop"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["qwenloop"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=qwenloop --cov-branch --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.run]
+branch = true
+source = ["src/qwenloop"]
+
+[tool.importlinter]
+root_package = "qwenloop"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Onion layering"
+type = "layers"
+layers = ["qwenloop.cli", "qwenloop.infrastructure", "qwenloop.application", "qwenloop.domain"]
