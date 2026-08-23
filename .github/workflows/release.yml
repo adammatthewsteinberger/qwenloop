@@ -16,7 +16,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v6
       - name: Stamp development version
         if: github.ref == 'refs/heads/develop'
         run: |
@@ -56,7 +56,7 @@ jobs:
     needs: [build, testpypi]
     runs-on: ubuntu-latest
     steps:
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v6
       - name: Install exact TestPyPI version
         env:
           VERSION: ${{ needs.build.outputs.version }}
@@ -93,7 +93,7 @@ jobs:
     needs: [build, pypi]
     runs-on: ubuntu-latest
     steps:
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v6
       - name: Install exact PyPI version
         env:
           VERSION: ${{ needs.build.outputs.version }}

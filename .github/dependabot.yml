@@ -16,6 +16,7 @@ updates:
     ignore:
       - dependency-name: actions/checkout
       - dependency-name: actions/setup-python
+      - dependency-name: astral-sh/setup-uv
     groups:
       github-actions:
         patterns: ["*"]
