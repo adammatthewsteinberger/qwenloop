@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 

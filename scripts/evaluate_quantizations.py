@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Run a reproducible 50-case local quantization smoke evaluation."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Pinned model profiles. Digests are operator-verifiable manifest fields."""
 
 from qwenloop.domain.model import Backend, ModelProfile

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import io
 import json
 from pathlib import Path
@@ -87,6 +88,7 @@ def test_server_argv_and_inspect(tmp_path: Path) -> None:
 async def test_stop_obeys_ownership(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     calls: list[tuple[int, object]] = []
     monkeypatch.setattr("os.killpg", lambda pid, sig: calls.append((pid, sig)))
+    monkeypatch.setattr("qwenloop.infrastructure.inference._pid_alive", lambda _pid: False)
     server = LlamaCppServer(tmp_path)
     await server.stop(ServerInfo(Backend.LLAMA_CPP, "p", "x", False, True, 5))
     await server.stop(ServerInfo(Backend.LLAMA_CPP, "p", "x", True, True, 5))
