@@ -1,0 +1,22 @@
+# vibey-gh owns provenance and release automation for this repository.
+
+[fingerprint]
+sources = [
+  "src/**/*.py",
+  "tests/**/*.py",
+  "scripts/**/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+files         = ["pyproject.toml", "src/qwenloop/__init__.py"]
+content_paths = ["src/qwenloop/"]
+code_paths    = ["src/qwenloop/"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]

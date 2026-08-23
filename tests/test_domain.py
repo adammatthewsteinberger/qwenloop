@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import pytest
 
 from qwenloop.application.backend_selection import Hardware, select_backend

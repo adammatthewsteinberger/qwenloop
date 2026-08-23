@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Managed llama.cpp/vLLM OpenAI-compatible server adapters."""
 
 import asyncio

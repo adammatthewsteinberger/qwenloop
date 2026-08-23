@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Bounded autonomous coding loop."""
 
 from pathlib import Path
