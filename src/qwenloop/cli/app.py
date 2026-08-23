@@ -6,7 +6,7 @@ import json
 import os
 import platform
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import time
 import uuid
 from dataclasses import asdict
@@ -303,12 +303,14 @@ def tool_deny(name: str) -> None:
 
 
 def _nvidia_vram() -> int:
-    if platform.system() != "Linux" or shutil.which("nvidia-smi") is None:
+    nvidia_smi = shutil.which("nvidia-smi")
+    if platform.system() != "Linux" or nvidia_smi is None:
         return 0
     try:
-        result = subprocess.run(
+        # The executable is resolved to an absolute path and all arguments are fixed.
+        result = subprocess.run(  # nosec B603
             [
-                "nvidia-smi",
+                nvidia_smi,
                 "--query-gpu=memory.free",
                 "--format=csv,noheader,nounits",
             ],
