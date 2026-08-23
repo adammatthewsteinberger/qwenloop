@@ -47,7 +47,7 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           # checkout's extraheader beats a remote URL, so the push of the version bump
@@ -55,7 +55,7 @@ jobs:
           token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 

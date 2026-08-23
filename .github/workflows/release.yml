@@ -37,6 +37,7 @@ jobs:
 
   testpypi:
     name: Publish to TestPyPI
+    if: github.ref == 'refs/heads/develop'
     needs: build
     runs-on: ubuntu-latest
     environment: testpypi
@@ -50,10 +51,9 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
 
-  verify:
+  verify-testpypi:
     name: Verify TestPyPI artifact
     needs: [build, testpypi]
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: astral-sh/setup-uv@v7
@@ -75,8 +75,8 @@ jobs:
 
   pypi:
     name: Publish to PyPI
-    needs: [build, verify]
     if: github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -87,3 +87,24 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
+
+  verify-pypi:
+    name: Verify PyPI artifact
+    needs: [build, pypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: astral-sh/setup-uv@v7
+      - name: Install exact PyPI version
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if uv tool install --refresh \
+              --index https://pypi.org/simple/ \
+              "qwenloop==${VERSION}"; then
+              break
+            fi
+            sleep 30
+          done
+          qwenloop --version
+          qwenloop --help

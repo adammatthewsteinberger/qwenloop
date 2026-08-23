@@ -11,6 +11,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # vibey-gh owns the versions used by its generated workflows. Upgrade these
+    # through vibey-gh so Dependabot cannot make the canonical templates drift.
+    ignore:
+      - dependency-name: actions/checkout
+      - dependency-name: actions/setup-python
     groups:
       github-actions:
         patterns: ["*"]
