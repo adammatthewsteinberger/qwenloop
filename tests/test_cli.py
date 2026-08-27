@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from qwenloop import __version__
 from qwenloop.cli.app import app
 from qwenloop.domain.model import Backend, RunState, RunStatus, ServerInfo
 from qwenloop.infrastructure.profiles import PORTABLE
@@ -13,9 +14,16 @@ runner = CliRunner()
 
 
 def test_version() -> None:
+    """Asserts the CLI reports the package's own version, not a literal.
+
+    Hardcoding it meant every release broke this test: the bump moves
+    pyproject.toml and __init__.py, the literal stays behind, and CI fails on
+    `assert "0.1.0" in "qwenloop 0.2.0"` — a failure that says nothing about the
+    CLI and everything about the test.
+    """
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.stdout
+    assert __version__ in result.stdout
 
 
 def test_union_commands_are_present() -> None:
