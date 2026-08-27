@@ -29,7 +29,7 @@ trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]
 pin_version = true
 # Exactly the workflows this repository already has. Left unset, the default set would
 # install several more; adopting those is a separate decision, not a version bump.
-workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml"]
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml"]
 
 [documentation]
 # Off deliberately. The contract is default-on and expects a marketplace manifest, a
