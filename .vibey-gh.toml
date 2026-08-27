@@ -30,3 +30,10 @@ pin_version = true
 # Exactly the workflows this repository already has. Left unset, the default set would
 # install several more; adopting those is a separate decision, not a version bump.
 workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml"]
+
+[documentation]
+# Off deliberately. The contract is default-on and expects a marketplace manifest, a
+# per-agent rules tree, a mermaid architecture diagram and a dozen other files. Satisfying
+# it is a real project and a separate decision; adopting it silently as a side effect of a
+# version bump would just make `check` fail on every push.
+enabled = false
