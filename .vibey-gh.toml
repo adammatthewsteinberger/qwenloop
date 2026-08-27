@@ -20,3 +20,13 @@ release     = "main"
 [merge_train]
 owner           = "adammatthewsteinberger"
 trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[install]
+# Pin every rendered template to the exact version that rendered it. Without this the
+# workflows run `pip install vibey-gh` unpinned, so a runner silently adopts whatever is
+# newest -- which is how vibey-skills' CI jumped 1.2.0 -> 1.16.0 mid-week and went red on a
+# `check` that had grown teeth. `vibey-gh install` is what advances the pin now.
+pin_version = true
+# Exactly the workflows this repository already has. Left unset, the default set would
+# install several more; adopting those is a separate decision, not a version bump.
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml"]
