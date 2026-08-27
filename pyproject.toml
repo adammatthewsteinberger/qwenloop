@@ -46,6 +46,12 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# E501 only, and only because of the provenance header. `vibey-gh check` requires an
+# exact 230-character comment on the first line of every source file, byte-for-byte, so it
+# cannot be wrapped or annotated without failing the check that mandates it. Line width on
+# real code is still enforced by ruff-format, which is why vibey-gh itself leaves E501
+# unselected rather than fighting its own fingerprint.
+ignore = ["E501"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["typer.Option", "typer.Argument"]
