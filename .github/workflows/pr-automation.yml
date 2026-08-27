@@ -971,14 +971,14 @@ jobs:
     # what removes that attack. A fork pull request falls through to the existing
     # behaviour — a failed gate a human resolves.
     if: >-
-      false &&
+      true &&
       always() && !cancelled() && github.event_name != 'schedule' &&
       inputs.dry_run != true &&
       needs.review.result == 'failure' &&
       needs.review.outputs.passed == '' &&
       (true == false ||
        needs.evaluate.outputs.head_repo == github.repository)
-    runs-on: [self-hosted, vibey-local]
+    runs-on: [self-hosted, vibey-local-qwenloop]
     # No secrets. This path exists precisely because the API key is unusable, so it needs
     # none, and it must never hold a token that could merge or mutate the repository.
     permissions:
