@@ -183,7 +183,7 @@ jobs:
           RELEASE_SHA: ${{ needs.context.outputs.sha }}
         run: |
           set -euo pipefail
-          export GA_ID=""
+          export GA_ID="G-C7DRK6WKM1"
           python -m pip install --quiet \
             'properdocs==1.6.7' 'properdocs-theme-mkdocs==1.6.7'
           # A site declaring plugins or markdown extensions needs them installed before
@@ -317,7 +317,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          GA_ID=""
+          GA_ID="G-C7DRK6WKM1"
           mkdir -p "pages/${CHANNEL}" "pages/${OTHER_CHANNEL}"
           cp -R channel-site/. "pages/${CHANNEL}/"
           restored=false

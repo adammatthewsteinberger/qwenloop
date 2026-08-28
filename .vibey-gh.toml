@@ -32,6 +32,9 @@ pin_version = true
 workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
 
 [documentation]
+# GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
+# GA_ID. Public by nature -- it ships in the page source of every site that uses it.
+google_analytics_id = "G-C7DRK6WKM1"
 # Off deliberately. The contract is default-on and expects a marketplace manifest, a
 # per-agent rules tree, a mermaid architecture diagram and a dozen other files. Satisfying
 # it is a real project and a separate decision; adopting it silently as a side effect of a
