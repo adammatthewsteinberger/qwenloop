@@ -283,7 +283,7 @@ jobs:
           # The documentation as artifacts on the site itself: the doctrine's end
           # results are a KDP-shaped book and a journal-shaped paper, and a reader
           # should download them from the docs they mirror — not hunt a release page.
-          if [ "false" = "true" ] || { [ "false" = "true" ] && [ -f docs/paper.md ]; }; then
+          if [ "true" = "true" ] || { [ "true" = "true" ] && [ -f docs/paper.md ]; }; then
             # This step's environment installs ProperDocs only; the exporters live in
             # vibey-gh. Observed as exit 127 on the first dogfooded deploy — the guard
             # printed its intent and the command did not exist. Self-hosting installs
@@ -294,7 +294,7 @@ jobs:
               python -m pip install --quiet "vibey-gh==1.58.0"
             fi
           fi
-          if [ "false" = "true" ]; then
+          if [ "true" = "true" ]; then
             AUTHOR=''
             vibey-gh book --site-dir channel-site --config-file .properdocs-channel.yml \
               --output-dir book-out \
@@ -322,7 +322,7 @@ jobs:
             fi
             echo "book: published book.epub and book-print.html on the channel site"
           fi
-          if [ "false" = "true" ] && [ -f docs/paper.md ] \
+          if [ "true" = "true" ] && [ -f docs/paper.md ] \
               && vibey-gh paper --help >/dev/null 2>&1; then
             AUTHOR=''
             vibey-gh paper --author "${AUTHOR:-${GITHUB_REPOSITORY%%/*}}" \
