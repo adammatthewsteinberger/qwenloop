@@ -21,7 +21,7 @@ class SandboxTools:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
             return {"written": len(content)}
-        if name == "run_command":
+        if name == "shell":
             argv = arguments.get("argv")
             if not isinstance(argv, list) or not argv or not all(isinstance(x, str) for x in argv):
                 return {"error": "argv must be a non-empty string list"}

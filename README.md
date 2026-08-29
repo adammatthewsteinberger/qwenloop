@@ -31,12 +31,81 @@ The Python package never bundles model weights.
 qwenloop model install --profile portable
 qwenloop model verify
 qwenloop doctor
-qwenloop run plan.md --run-id <uuid> --cwd <worktree>
+echo 'Add a LICENSE file with the MIT license text.' > plan.md
+qwenloop run plan.md --run-id demo-1 --cwd "$(pwd)"
 ```
 
-The stable run contract is `.qwenloop/runs/<run-id>/`, exit code `75` for a
-graceful wind-down, the `QWENLOOP_TASK_FULLY_COMPLETE` marker, and a
-`qwenloop-verdict` result fence.
+`run` picks a backend automatically (`--backend auto`, the default), starting
+or reusing a local inference server, then drives the autonomous coding loop
+against `plan.md` for up to `--max-turns` turns (default `40`). It exits:
+
+| Exit code | Meaning |
+|---|---|
+| `0` | The model produced a `` ```qwenloop-verdict `` fence and the `QWENLOOP_TASK_FULLY_COMPLETE` marker in the same turn. |
+| `75` | A `stop`/`wind-down` control message was seen; the run stopped cleanly mid-task. |
+| `1` | The turn limit was reached, the model returned an empty response, or the inference server could not start (see stderr). |
+
+While a run is in progress (from another terminal, same `--cwd`):
+
+```bash
+qwenloop prompt demo-1 "also add a CHANGELOG entry"   # queue extra guidance
+qwenloop wind-down demo-1                             # ask it to stop cleanly (exit 75)
+qwenloop stop demo-1                                  # same effect, for scripts
+```
+
+### Run directory layout
+
+Every run writes to `<cwd>/.qwenloop/runs/<run-id>/`:
+
+- `meta.json` — the run's backend, profile, repository/revision, and pinned artifact digest, written once at creation.
+- `events.jsonl` — an append-only ledger of every text delta, tool call, tool result, completion, and failure for the run.
+- `snapshots/latest.json` — the current status, turn count, and token counts, replaced atomically after each turn.
+- `control/inbox/*.json` — control messages (`stop`, `wind_down`, `prompt`) dropped by the commands above and consumed on the next turn.
+
+`qwenloop usage --cwd DIR` counts run directories under a given tree;
+`qwenloop whoami` reports a fixed local identity (no account, no spend).
+
+See [`docs/architecture/overview.md`](docs/architecture/overview.md) for a
+diagram of the onion layers and the model trust boundary, and
+[`docs/capability-matrix.md`](docs/capability-matrix.md) for every CLI
+command, including which of the claudeloop/codexloop/cursorloop/agyloop
+command surface is wired to real local behavior versus a placeholder kept
+only for script compatibility.
+
+## Agent tool surface
+
+Inside a run, the model can only act through three typed tools
+(`src/qwenloop/infrastructure/inference.py`, `_CODING_TOOLS`), dispatched by
+`SandboxTools` (`src/qwenloop/infrastructure/tools.py`):
+
+| Tool | Arguments | Behavior |
+|---|---|---|
+| `read_file` | `path` | Reads a UTF-8 file resolved against the run's worktree (`--cwd`), truncated to 200,000 characters. Raises if the resolved path escapes the worktree. |
+| `write_file` | `path`, `content` | Writes UTF-8 text to a path resolved against the worktree, creating parent directories as needed. Raises on the same worktree-escape check as `read_file`. |
+| `shell` | `argv` (list of strings) | Runs `argv` with the worktree as its working directory, a 120 second timeout, and up to 100,000 trailing characters of combined stdout/stderr returned. |
+
+`shell` strips environment variables whose names contain `KEY` or `TOKEN` and
+tags the environment as network-disabled unless the run was started with
+network access allowed. It refuses to launch exactly four programs —
+`sudo`, `rm`, `shutdown`, `reboot` — as `argv[0]`. **It does not otherwise
+sandbox filesystem or network access**: unlike `read_file`/`write_file`, a
+shell command is not confined to the worktree. See
+[`SECURITY.md`](SECURITY.md) and
+[ADR 0002](docs/architecture/decisions/0002-tool-security.md) before running
+plans you do not trust.
+
+`qwenloop tool approve NAME` / `qwenloop tool deny NAME` print an
+acknowledgement for operator visibility; they do not currently gate which
+tools a running model may call.
+
+## Configuration
+
+`qwenloop.domain.config.QwenConfig` / `parse_config()` define a validated
+configuration schema (backend, profile names, timeouts, context window, max
+turns) for embedding qwenloop as a library. It is not yet wired to a CLI flag
+or a config file — every `qwenloop run`/`server start` invocation today is
+configured entirely through command-line options and the pinned profiles in
+`src/qwenloop/infrastructure/profiles.py`.
 
 ## Inference profiles
 
@@ -45,8 +114,20 @@ graceful wind-down, the `QWENLOOP_TASK_FULLY_COMPLETE` marker, and a
 | `portable` | llama.cpp Q5_K_M | Apple Silicon, Linux CPU, supported offload GPUs | Explicit `qwenloop model install --profile portable` |
 | `nvidia-bf16` | vLLM BF16 | Linux NVIDIA with at least 40 GiB free VRAM | Operator-managed pinned Hugging Face/vLLM cache |
 
-Servers bind to loopback and require a per-launch bearer token. Qwenloop never
-silently changes backend during a run.
+Servers bind to loopback and require a per-launch bearer token, generated
+fresh each time a server is started. Qwenloop never silently changes backend
+during a run: `--backend auto` decides once, before the run starts
+(`qwenloop.application.backend_selection.select_backend`), based on OS,
+detected NVIDIA VRAM, and whether `vllm` is on `PATH`.
+
+## Interfaces
+
+Qwenloop is a local CLI and an internal OpenAI-compatible HTTP server used to
+talk to llama.cpp/vLLM (loopback-only, bearer-token protected, not intended
+as a public API). There is currently no distributed Python SDK, no public
+hosted API, no MCP server, and no webhook integration — automation should
+shell out to the `qwenloop` CLI and poll `snapshots/latest.json` or tail
+`events.jsonl` as described above.
 
 ## Development
 
