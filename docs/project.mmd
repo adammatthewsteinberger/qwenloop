@@ -1,0 +1,139 @@
+%% Comprehensive map of qwenloop: source modules, public interfaces, the run
+%% lifecycle data flow, the model trust boundary, and the CI/release/provenance
+%% channels. See docs/architecture/overview.md for the onion-layer narrative
+%% and docs/capability-matrix.md for the full CLI command reference.
+flowchart TB
+    subgraph CLI["cli — src/qwenloop/cli/app.py (Typer)"]
+        CMD_RUN["run PLAN --run-id --cwd --backend --max-turns"]
+        CMD_MODEL["model list / inspect / verify / install / remove"]
+        CMD_SERVER["server status / start / stop"]
+        CMD_DOCTOR["doctor"]
+        CMD_IDENTITY["whoami / usage"]
+        CMD_CONTROL["stop / wind-down / prompt"]
+        CMD_TOOL["tool approve / deny (operator visibility only)"]
+        CMD_STUB["~40 local-equivalent stub commands: resume, status, logs, watch,
+snapshot, reset, runs, sessions, threads, agents, savepoints, unwind,
+capacity, models, effort, preset, permission-mode, approval, sandbox,
+cwd, slash, hooks, config, attach, unattach, folder, skill, plugin,
+connector, memory, artifact, github, research, web-search, chat,
+response, voice, speak, cloud, api — print an ack and exit 0"]
+    end
+
+    subgraph APPLICATION["application — src/qwenloop/application"]
+        SELECT["backend_selection.select_backend(OS, VRAM, vllm on PATH)"]
+        RUNNER["runner.AutonomousRunner — drives the turn loop"]
+        IFACE["interfaces.py — InferenceServer / RunStore / ToolExecutor Protocols"]
+    end
+
+    subgraph INFRA["infrastructure — src/qwenloop/infrastructure"]
+        INF["inference.py — LlamaCppServer / VllmServer,
+_CODING_TOOLS schema advertised to the model"]
+        TOOLS["tools.py — SandboxTools.execute
+(read_file / write_file / shell)"]
+        STORE["run_store.py — FileRunStore"]
+        CACHE["model_cache.py — ModelCache.install / verify"]
+        PROFILES["profiles.py — PORTABLE / NVIDIA_BF16 pinned manifests"]
+    end
+
+    subgraph DOMAIN["domain — src/qwenloop/domain"]
+        MODEL_T["model.py — ModelProfile, ServerInfo, RunState,
+Backend, RunStatus, ChatMessage/ChatChunk"]
+        CONFIG_T["config.py — QwenConfig / parse_config
+(library-only; no CLI flag or config file wires it up yet)"]
+    end
+
+    CMD_RUN --> SELECT
+    CMD_RUN --> RUNNER
+    CMD_SERVER --> INF
+    CMD_MODEL --> CACHE
+    CMD_MODEL --> PROFILES
+    CMD_CONTROL --> STORE
+    CMD_DOCTOR -.->|"checks PATH only, never downloads"| INF
+
+    SELECT --> MODEL_T
+    RUNNER --> IFACE
+    INF -.->|implements| IFACE
+    TOOLS -.->|implements| IFACE
+    STORE -.->|implements| IFACE
+    INF --> MODEL_T
+    TOOLS --> MODEL_T
+    STORE --> MODEL_T
+    CACHE --> MODEL_T
+    CACHE -->|verifies live digest against| PROFILES
+    PROFILES --> MODEL_T
+
+    subgraph RUNLIFECYCLE["run lifecycle — <cwd>/.qwenloop/runs/<run-id>/"]
+        META["meta.json — backend, profile, revision, pinned digest (write-once)"]
+        EVENTS["events.jsonl — append-only ledger of deltas/tool calls/results"]
+        SNAPSHOT["snapshots/latest.json — status, turn count, token counts"]
+        INBOX["control/inbox/*.json — stop / wind_down / prompt messages"]
+    end
+    RUNNER --> STORE
+    STORE --> META
+    STORE --> EVENTS
+    STORE --> SNAPSHOT
+    CMD_CONTROL --> INBOX
+    INBOX -.->|read on next turn| RUNNER
+
+    subgraph TRUST["untrusted model boundary — SECURITY.md, ADR 0002"]
+        SERVER["llama.cpp / vLLM server —
+loopback bind, per-launch bearer token"]
+    end
+    INF <-->|"OpenAI-compatible HTTP, streamed tool_calls"| SERVER
+    SERVER -.->|"tool_call: read_file / write_file / shell (untrusted args)"| TOOLS
+    TOOLS -.->|"read_file/write_file confined to worktree;
+shell only denies argv[0] in {sudo,rm,shutdown,reboot},
+otherwise unsandboxed filesystem/network access"| RUNLIFECYCLE
+
+    subgraph CI["CI — .github/workflows/ci.yml (push/PR to main, develop)"]
+        CI_QUALITY["quality: ruff check/format, mypy --strict, lint-imports, bandit"]
+        CI_TEST["test: pytest across Python 3.12 / 3.13 / 3.14"]
+        CI_LOCK["lock: uv lock --check"]
+        CI_BUILD["build: uv build, twine check, wheel install smoke"]
+    end
+    subgraph PROVENANCE["provenance.yml — required check on every branch and PR"]
+        PROV["vibey-gh check --ci — server-side commit provenance fingerprint"]
+    end
+    subgraph PRAUTO["pr-automation.yml"]
+        PA_EVAL["evaluate: aggregate CI/provenance scan + review state"]
+        PA_REVIEW["review: exact-head semantic code + documentation review
+(Claude, target/ checked out read-only)"]
+        PA_REPAIR["repair: bounded auto-repair, one guarded commit"]
+        PA_FALLBACK["review-fallback: local qwen2.5-coder:14b,
+self-hosted runner, no secrets, diff-only"]
+        PA_GATE["gate: publishes the 'PR automation / gate' check"]
+    end
+    subgraph MERGETRAIN["merge-train.yml"]
+        MT["vibey-gh merge-train — merges any PR with a green exact-head gate"]
+    end
+    subgraph PROMOTE["promote-to-main.yml"]
+        PROMOTEJOB["vibey-gh promote — opens/reuses develop-to-main PR,
+derives the release version by content diff"]
+    end
+    subgraph RELEASE["release.yml — push to main or develop"]
+        REL_BUILD["build dist"]
+        REL_TESTPYPI["Publish to TestPyPI (develop)"]
+        REL_PYPI["Publish to PyPI (main)"]
+    end
+    subgraph SURFACES["release-surfaces.yml — after Release succeeds"]
+        SURF_PKG["GitHub Package: OCI bundle on ghcr.io"]
+        SURF_DOCS["ProperDocs site deployed to GitHub Pages"]
+    end
+    subgraph BOOTSTRAP["automation-bootstrap.yml — admin-only recovery path"]
+        BOOT["verifies exact head + independent gates,
+then an authorized squash merge for automation-core paths only"]
+    end
+
+    CI --> PA_EVAL
+    PROVENANCE --> PA_EVAL
+    PA_EVAL --> PA_REVIEW
+    PA_REVIEW --> PA_GATE
+    PA_REVIEW -.->|"no verdict: credentials/credit/availability"| PA_FALLBACK
+    PA_FALLBACK --> PA_GATE
+    PA_EVAL --> PA_REPAIR
+    PA_REPAIR -.->|"one guarded commit re-triggers"| CI
+    PA_GATE -->|conclusion=success| MT
+    MT -->|merged| PROMOTEJOB
+    PROMOTEJOB --> RELEASE
+    RELEASE --> SURFACES
+    PA_GATE -.->|"privileged automation-core gate broken"| BOOT

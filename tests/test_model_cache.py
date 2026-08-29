@@ -72,6 +72,16 @@ def test_model_cache_publishes_complete_resumed_download_without_network(tmp_pat
     assert target.read_bytes() == content
 
 
+def test_model_cache_verify_rejects_rotated_pin(tmp_path: Path) -> None:
+    content = b"model bytes"
+    profile = replace(PORTABLE, size=len(content), sha256=None)
+    cache = ModelCache(tmp_path, opener=lambda *_args, **_kwargs: Response(content))
+    cache.install(profile)
+    rotated = replace(profile, sha256="f" * 64)
+    with pytest.raises(ValueError, match="pinned manifest"):
+        cache.verify(rotated)
+
+
 def test_model_cache_rejects_pinned_digest_and_revision(tmp_path: Path) -> None:
     content = b"model bytes"
     profile = replace(PORTABLE, size=len(content), sha256="0" * 64)

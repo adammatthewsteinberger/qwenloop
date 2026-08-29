@@ -83,8 +83,11 @@ class ModelCache:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("revision") != profile.revision:
             raise ValueError("installed model revision does not match the pinned profile")
-        if _sha256(target) != manifest.get("installed_sha256"):
+        digest = _sha256(target)
+        if digest != manifest.get("installed_sha256"):
             raise ValueError("installed model digest does not match its installation manifest")
+        if profile.sha256 is not None and digest != profile.sha256:
+            raise ValueError("installed model digest does not match the pinned manifest")
         return target
 
 

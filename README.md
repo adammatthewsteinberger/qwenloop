@@ -25,6 +25,22 @@ uv tool install \
 
 The Python package never bundles model weights.
 
+## Prerequisites
+
+`qwenloop` never installs an inference backend for you. Before `doctor` or
+`run` can start a local server, install one of:
+
+- **llama.cpp** (`llama-server` on `PATH`) — required for the default
+  `portable` profile. Build from source or use a packaged release from
+  [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp); on macOS,
+  `brew install llama.cpp` also provides `llama-server`.
+- **vLLM** (`vllm` on `PATH`) — only needed for the `nvidia-bf16` profile on
+  Linux with an NVIDIA GPU. Install with `pip install vllm` (or `uv tool
+  install vllm`) following [vLLM's installation
+  guide](https://docs.vllm.ai/en/latest/getting_started/installation.html).
+
+Run `qwenloop doctor` after installing to confirm which backend(s) it found.
+
 ## Quick start
 
 ```bash
@@ -66,8 +82,10 @@ Every run writes to `<cwd>/.qwenloop/runs/<run-id>/`:
 `qwenloop whoami` reports a fixed local identity (no account, no spend).
 
 See [`docs/architecture/overview.md`](docs/architecture/overview.md) for a
-diagram of the onion layers and the model trust boundary, and
-[`docs/capability-matrix.md`](docs/capability-matrix.md) for every CLI
+diagram of the onion layers and the model trust boundary,
+[`docs/project.mmd`](docs/project.mmd) for the comprehensive map of every
+source module, CLI surface, run lifecycle, and release/provenance channel,
+and [`docs/capability-matrix.md`](docs/capability-matrix.md) for every CLI
 command, including which of the claudeloop/codexloop/cursorloop/agyloop
 command surface is wired to real local behavior versus a placeholder kept
 only for script compatibility.
@@ -147,8 +165,55 @@ smokes are deliberately separate from the hermetic CI suite.
 ## Release workflow
 
 Qwenloop uses `develop` as its integration branch and `main` as its release
-branch. `vibey-gh` provides provenance fingerprints, merge-train automation,
-derived versions, promotion, and post-release branch realignment.
+branch. Every change moves through the pipeline defined in
+`.github/workflows/`:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `ci.yml` | Push/PR to `main`/`develop` | Lint, type-check, import-layering, `bandit`, tests on Python 3.12–3.14, and a build+install smoke. |
+| `provenance.yml` | Every branch and PR | Required check that verifies commit provenance fingerprints server-side. |
+| `pr-automation.yml` | CI/Provenance completion, PR events | Evaluates the exact PR head, runs an exact-head semantic code/documentation review, and publishes the `PR automation / gate` check. If the review returns no verdict (credentials, credit, or model availability), a local-model fallback reviews the diff instead and says so explicitly in the gate summary. |
+| `merge-train.yml` | A green `PR automation / gate` | Merges every currently-ready PR into `develop`. |
+| `promote-to-main.yml` | A successful merge train | Opens or updates a `develop` → `main` promotion PR and derives the release version. |
+| `release.yml` | Push to `main`/`develop` | Builds distributions and publishes to TestPyPI (`develop`) or PyPI (`main`). |
+| `release-surfaces.yml` | A successful `release.yml` run | Publishes an OCI package to GitHub Packages and a versioned docs site to GitHub Pages. |
+| `automation-bootstrap.yml` | Manual, admin-authorized | Recovery path for repairing the automation pipeline itself when its own gate is broken; scoped to automation-core paths and requires independent gates to already be green. |
+
+**If a gate is red:** open the failing check's run for its log. `pr-automation`
+attempts a bounded, automatic repair commit for PR-level failures (scans or
+review findings) before asking a human; a PR labeled
+`vibey-gh:repair-exhausted` has used its automatic attempts and needs a manual
+fix. `vibey-gh:automation-blocked` means the failure is outside what an
+automated repair can fix (credentials, billing, external service
+availability, or a repository-settings change) — the PR automation's own
+structured verdict names the exact operator action required. See
+[`docs/architecture/overview.md`](docs/architecture/overview.md) and
+[`docs/project.mmd`](docs/project.mmd) for the full workflow graph.
+
+## Contributing and support
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow and
+pre-submission checks, and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for
+participation expectations. Report security vulnerabilities as described in
+[`SECURITY.md`](SECURITY.md) rather than filing a public issue. For anything
+else — bugs, questions, feature requests — open a GitHub issue.
+
+## Troubleshooting
+
+- **`doctor` reports both backends missing** — see [Prerequisites](#prerequisites)
+  above; `qwenloop` never installs `llama-server` or `vllm` for you.
+- **`qwenloop run` exits `1` with "inference server could not start"** — the
+  backend binary was found but failed to launch or never became healthy
+  within 180 seconds; rerun with the backend's own logs visible (`qwenloop
+  server start` surfaces the same startup path standalone) to see why.
+- **`model verify` fails after previously succeeding** — the installed
+  artifact no longer matches its pinned manifest (`src/qwenloop/infrastructure/profiles.py`).
+  Re-run `qwenloop model install --profile <name>` to fetch the currently
+  pinned artifact.
+- **A shell tool call in a run touched files outside the plan's intent** — the
+  `shell` tool is not filesystem- or network-sandboxed; see [Agent tool
+  surface](#agent-tool-surface) and [`SECURITY.md`](SECURITY.md) before
+  running plans from an untrusted source.
 
 ## License
 
