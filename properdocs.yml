@@ -33,3 +33,4 @@ nav:
       - Decision records:
           - "0001 — Local inference": architecture/decisions/0001-local-inference.md
           - "0002 — Tool security": architecture/decisions/0002-tool-security.md
+  - Research paper: paper.md
