@@ -32,10 +32,9 @@ pin_version = true
 workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
 
 [documentation]
-# The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true.
-# The roadmap for this repository rides the parked research-paper pull request; flip this to true when it merges.
-# The exact-head review still judges roadmap liveness on every head.
-require_roadmap = false
+generate_book = true
+generate_paper = true
+
 # GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
 # GA_ID. Public by nature -- it ships in the page source of every site that uses it.
 google_analytics_id = "G-C7DRK6WKM1"
