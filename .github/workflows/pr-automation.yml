@@ -490,7 +490,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Archive review record
         if: always() && steps.claude.outputs.execution_file != '' && true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-review-${{ needs.evaluate.outputs.pr }}-${{ github.run_id }}
           path: ${{ steps.claude.outputs.execution_file }}
@@ -833,7 +833,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Archive repair record
         if: always() && steps.claude.outputs.execution_file != '' && true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-repair-${{ needs.evaluate.outputs.pr }}-${{ github.run_id }}
           path: ${{ steps.claude.outputs.execution_file }}
@@ -1050,7 +1050,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Archive conflict-resolution record
         if: always() && steps.claude.outputs.execution_file != '' && true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-conflict-${{ needs.evaluate.outputs.pr }}-${{ github.run_id }}
           path: ${{ steps.claude.outputs.execution_file }}
@@ -1180,7 +1180,7 @@ jobs:
           echo "passed=$(jq -r .pass "${RUNNER_TEMP}/verdict.json")" >> "$GITHUB_OUTPUT"
       - name: Archive the fallback verdict
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-review-fallback-${{ needs.evaluate.outputs.pr }}-${{ github.run_id }}
           path: ${{ runner.temp }}/verdict.json
